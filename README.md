@@ -4,16 +4,17 @@
 
 系统调用（System Call），通常简称为 syscall，是操作系统提供给应用程序的接口之一，用于执行各种特权操作，例如文件操作、进程管理、网络通信、内存管理等。系统调用允许应用程序请求操作系统内核执行特定的任务，而不需要直接操作底层硬件。
 
-通常来说，作为用户态与内核态的边界，系统调用的参数一般是指针或者基本类型，并且参数的数量根据平台的不同而不同。在内核处理系统调用时，会从平台定义的参数寄存器中取出各个参数，同时根据系统调用号调用对应的处理函数，这个过程可能需要逐个对比，如果有一种直接根据调用号一步找到对应处理函数的话就能减少判断的次数，而且在rust中，各个处理函数可能分散在不同的模块中，在处理系统调用时，还需要将这些函数导入到当前作用域中。
+通常来说，作为用户态与内核态的边界，系统调用的参数一般是指针或者基本类型，并且参数的数量根据平台的不同而不同。在内核处理系统调用时，会从平台定义的参数寄存器中取出各个参数，同时根据系统调用号调用对应的处理函数。
 
-`syscall-table`提供了一种方式，可以将这些系统调用的函数实现注册一个新的实现，同时允许用户使用系统调用号或者函数名称直接调用。
+`syscall-table`提供了一种方式，可以将这些系统调用的函数实现注册一个新的实现，同时允许用户使用系统调用号或者函数名称直接调用。这样就不需要大段的`match`了。
 
 
 
 ## Example
 
 ```rust
-use syscall_table::{*};
+#![feature(concat_idents)]
+use syscall_table::*;
 
 #[syscall_func(1)]
 fn test_write(p: usize) -> isize {
@@ -78,19 +79,29 @@ fn special_ptr(point: *const Point) -> isize {
 }
 
 fn main() {
-    invoke_call!(2, 1usize, 1usize);
+    // let mut table = Table::new();
+    // register_syscall!(table, (0, read), (1, test));
+    // table.do_call(0, &[1, 2]);
+    // let data = [6usize; 8];
+    // table.do_call(1, &[0, 8 * 8, data.as_ptr() as usize]);
+    // table.register(2, test_write);
+
+    println!("invoke_call:");
     invoke_call!(read, 1usize, 2usize);
     let v = invoke_call!(add, 2usize, 4usize);
     assert_eq!(v, 6);
     println!("v = {}", v);
     invoke_call!(test_write, 99usize);
-    invoke_call!(5,);
 
-    let point = Point { x: 1, y: 2 };
-    let ptr = &point as *const _ as usize;
-    invoke_call!(6, ptr);
     let mut point = Point { x: 4, y: 5 };
     let _res = invoke_call!(special_ptr, &mut point);
+    for wrapper in inventory::iter::<ServiceWrapper> {
+        println!("id = {}", wrapper.id);
+    }
+
+    let r = invoke_call_id!(3, 1usize, 2usize);
+    println!("r = {}", r);
+    invoke_call_id!(5,);
 }
 
 ```
@@ -99,4 +110,27 @@ fn main() {
 
 ## 实现方式
 
-充分利用rust的函数宏和过程宏。
+1. 利用rust的函数宏和过程宏定义函数的统一形式
+
+2. 使用`inventory` 收集所有的实现
+
+   1. 其利用`.init_array`段，这是一个特殊的段，在用户态，libc会调用这里面的函数指针，完成一些特定动作，在内核态，我们需要在使用前手动去调用这个段中的初始化函数。
+   2. 库中提供了一个宏`init_init_array`完成这个事情。请在链接脚本中定义如下这个段以便可以找到其所在位置。这个段通常位于.data段中
+
+   ```
+   sinit = .;
+   *(.init_array .init_array.*)
+   einit = .;
+   ```
+
+3. `invoke_call_id` 遍历收集到的实现，找到对应id的实现
+
+4. `invoke_call`会直接调用而不需要查找
+
+
+
+## TODO
+
+`invoke_call_id` 这个过程仍然需要逐个对比，如果有一种直接根据调用号一步找到对应处理函数的话就能减少判断的次数。
+
+思路：以空间换时间

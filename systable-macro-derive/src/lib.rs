@@ -1,25 +1,28 @@
 #![cfg_attr(not(test), no_std)]
 
-extern crate proc_macro;
 extern crate alloc;
+extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{ parse_macro_input};
-
-
-/// \[syscall_func(10)]
+use syn::parse_macro_input;
+/// Define a syscall function
+///
+/// # Example
+/// ```no_run
+/// [syscall_func(10)]
+/// fn test(a:usize,b:usize)->isize{
+///     println!("test {} {}",a,b);
+///     0
+/// }
 #[proc_macro_attribute]
 pub fn syscall_func(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attr = parse_macro_input!(attr as syn::LitInt);
     let number = attr.base10_parse::<u16>().unwrap();
     let input = parse_macro_input!(item as syn::ItemFn);
     let ident = format_ident!("__syscall_{}", number);
-    // println!("input = {:?}", input);
     let old_ident = input.sig.ident.clone();
-    // let input_func_output = input.sig.output.clone();
-    let name_ident = format_ident!("__{}" ,old_ident);
-    // let init = format!(".init_array.{}", number);
-    let name_syscall = quote!{
+    let name_ident = format_ident!("__{}", old_ident);
+    let name_syscall = quote! {
         #[inline]
         #[no_mangle]
          fn #name_ident(p:&[usize])->isize
