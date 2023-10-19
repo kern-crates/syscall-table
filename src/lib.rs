@@ -115,6 +115,41 @@ where
     }
 }
 
+/// Trait for converting to isize
+pub trait ToIsize {
+    /// Convert to isize
+    fn to_isize(self) -> isize;
+}
+
+macro_rules! mark_to_isize {
+    ($ident:ty) => {
+        impl ToIsize for $ident {
+            fn to_isize(self) -> isize {
+                self as isize
+            }
+        }
+    };
+}
+mark_to_isize!(usize);
+mark_to_isize!(u64);
+mark_to_isize!(u32);
+mark_to_isize!(u16);
+mark_to_isize!(u8);
+mark_to_isize!(isize);
+mark_to_isize!(i64);
+mark_to_isize!(i32);
+mark_to_isize!(i16);
+mark_to_isize!(i8);
+
+impl<T, E: ToIsize> ToIsize for Result<T, E> {
+    fn to_isize(self) -> isize {
+        match self {
+            Ok(_) => 0,
+            Err(e) => e.to_isize(),
+        }
+    }
+}
+
 /// Trait for converting to usize
 pub trait ToUsize {
     /// Convert to usize
@@ -267,12 +302,12 @@ impl Service {
     where
         F: UniFn<Args, Res> + 'static,
         Args: FromArgs + 'static,
-        Res: Into<isize> + 'static,
+        Res: ToIsize + 'static,
     {
         Self {
             service: Box::new(move |args: &[usize]| {
                 let args = Args::from(args).unwrap();
-                handler.call(args).into()
+                handler.call(args).to_isize()
             }),
         }
     }
@@ -304,7 +339,7 @@ impl Table {
     where
         F: UniFn<Args, Res> + 'static,
         Args: FromArgs + 'static,
-        Res: Into<isize> + 'static,
+        Res: ToIsize + 'static,
     {
         let handler = SysCallHandler::new(func);
         self.map.insert(id, Service::from_handler(handler));
@@ -352,7 +387,7 @@ pub const fn register<F, Args, Res>(func: F) -> SysCallHandler<F, Args, Res>
 where
     F: UniFn<Args, Res> + 'static,
     Args: FromArgs + 'static,
-    Res: Into<isize> + 'static,
+    Res: ToIsize + 'static,
 {
     let handler = SysCallHandler::new(func);
     handler

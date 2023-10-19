@@ -34,8 +34,9 @@ impl From<usize> for SelfUsize {
         SelfUsize(value)
     }
 }
-impl Into<isize> for SelfUsize {
-    fn into(self) -> isize {
+
+impl ToIsize for SelfUsize {
+    fn to_isize(self) -> isize {
         self.0 as isize
     }
 }
@@ -63,6 +64,11 @@ fn special_ptr(point: *const Point) -> isize {
     0
 }
 
+#[syscall_func(7)]
+fn result_fn() -> Result<(), i32> {
+    Err(-2)
+}
+
 fn main() {
     // let mut table = Table::new();
     // register_syscall!(table, (0, read), (1, test));
@@ -87,4 +93,7 @@ fn main() {
     let r = invoke_call_id!(3, 1usize, 2usize);
     println!("r = {}", r);
     invoke_call_id!(5,);
+
+    let res = invoke_call!(result_fn,);
+    assert_eq!(res, -2);
 }
