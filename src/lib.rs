@@ -130,6 +130,11 @@ macro_rules! mark_to_isize {
         }
     };
 }
+impl ToIsize for (){
+    fn to_isize(self) -> isize {
+        0
+    }
+}
 mark_to_isize!(usize);
 mark_to_isize!(u64);
 mark_to_isize!(u32);
@@ -141,10 +146,10 @@ mark_to_isize!(i32);
 mark_to_isize!(i16);
 mark_to_isize!(i8);
 
-impl<T, E: ToIsize> ToIsize for Result<T, E> {
+impl<T:ToIsize, E: ToIsize> ToIsize for Result<T, E> {
     fn to_isize(self) -> isize {
         match self {
-            Ok(_) => 0,
+            Ok(t) => t.to_isize(),
             Err(e) => e.to_isize(),
         }
     }

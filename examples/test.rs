@@ -69,6 +69,12 @@ fn result_fn() -> Result<(), i32> {
     Err(-2)
 }
 
+
+#[syscall_func(8)]
+fn result_fn2() -> Result<usize, i32> {
+    Ok(1)
+}
+
 fn main() {
     // let mut table = Table::new();
     // register_syscall!(table, (0, read), (1, test));
@@ -96,4 +102,7 @@ fn main() {
 
     let res = invoke_call!(result_fn,);
     assert_eq!(res, -2);
+
+    let res = invoke_call_id!(8,);
+    assert_eq!(res,1)
 }
