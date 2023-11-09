@@ -1,4 +1,3 @@
-#![feature(concat_idents)]
 use syscall_table::*;
 
 #[syscall_func(1)]
@@ -97,6 +96,7 @@ fn main() {
     }
 
     let r = invoke_call_id!(3, 1usize, 2usize);
+    assert_eq!(r,3);
     println!("r = {}", r);
     invoke_call_id!(5,);
 
