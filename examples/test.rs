@@ -75,12 +75,13 @@ fn result_fn2() -> Result<usize, i32> {
 }
 
 fn main() {
-    // let mut table = Table::new();
-    // register_syscall!(table, (0, read), (1, test));
-    // table.do_call(0, &[1, 2]);
-    // let data = [6usize; 8];
-    // table.do_call(1, &[0, 8 * 8, data.as_ptr() as usize]);
-    // table.register(2, test_write);
+    let mut table = Table::new();
+    register_syscall!(table, (0, read), (1, test));
+    table.do_call(0, &[1, 2]);
+    let data = [6usize; 8];
+    table.do_call(1, &[0, 8 * 8, data.as_ptr() as usize]);
+    table.register(2, test_write);
+
 
     println!("invoke_call:");
     invoke_call!(read, 1usize, 2usize);

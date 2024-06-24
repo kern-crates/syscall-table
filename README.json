@@ -1,0 +1,10 @@
+{
+  "name": "syscall-table",
+  "description": "A crate that provides a syscall table to collect all syscall functions.",
+  "authors": [{
+    "name": "chenlinfeng ",
+    "email": "chenlinfeng25@outlook.com"
+  }],
+  "keywords": ["syscall", "table", "init_array"],
+  "doc_url": "https://github.com/kern-crates/syscall-table/blob/main/README.md"
+}
